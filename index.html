@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Print Card</title>
+    <title>Print me a card</title>
     <style>
         body {
             font-family: 'Courier New', Courier, monospace;
@@ -76,6 +76,21 @@
             margin-right: 8px;
         }
 
+        .color-picker {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+        }
+
+        .color-picker div {
+            display: flex;
+            align-items: center;
+        }
+
+        .color-picker input {
+            margin-left: 10px;
+        }
+
         @media (max-width: 768px) {
             .title {
                 font-size: 18px;
@@ -92,6 +107,17 @@
         <div class="title">Print me a card</div>
         <textarea id="text-input" placeholder="Digite sua frase aqui"></textarea>
         <canvas id="cardCanvas" width="1080" height="1350"></canvas>
+
+        <div class="color-picker">
+            <div>
+                <label for="bg-color">Cor do Fundo:</label>
+                <input type="color" id="bg-color" value="#FFFFFF">
+            </div>
+            <div>
+                <label for="text-color">Cor do Texto:</label>
+                <input type="color" id="text-color" value="#000000">
+            </div>
+        </div>
 
         <div class="buttons">
             <button class="btn" onclick="generateCard()">
@@ -113,17 +139,24 @@
         // Função para gerar o card
         function generateCard() {
             const text = document.getElementById("text-input").value;
+            const bgColor = document.getElementById("bg-color").value;
+            const textColor = document.getElementById("text-color").value;
+
             const canvas = document.getElementById("cardCanvas");
             const ctx = canvas.getContext("2d");
 
             // Limpar o canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            // Definir cor de fundo
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
             // Estilo de texto
             let fontSize = 60; // Tamanho inicial da fonte
             ctx.font = `bold ${fontSize}px Courier New`;
             ctx.textAlign = "center";
-            ctx.fillStyle = "#000";
+            ctx.fillStyle = textColor;
 
             // Quebra o texto se necessário para caber no canvas
             const maxWidth = canvas.width - 100; // Margem de 50px em cada lado
