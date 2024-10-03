@@ -203,7 +203,7 @@
             document.getElementById('btn9x16').classList.remove('active');
         }
 
-        // Função para gerar o card com ajuste de nitidez e quebra de linhas
+        // Função para gerar o card com ajuste de nitidez e centralização vertical
         function generateCard() {
             const text = document.getElementById("text-input").value;
             const bgColor = document.getElementById("bg-color").value;
@@ -241,6 +241,11 @@
                 }
                 lines.push(line);
 
+                const totalHeight = lines.length * lineHeight; // Altura total do bloco de texto
+
+                // Centralizar o texto verticalmente
+                y = (canvas.height / scaleFactor - totalHeight) / 2;
+
                 for (let i = 0; i < lines.length; i++) {
                     context.fillText(lines[i], x, y + (i * lineHeight));
                 }
@@ -248,8 +253,9 @@
 
             const maxWidth = (canvas.width / scaleFactor) - 40; // Definir uma margem de 20px em cada lado
             const lineHeight = 30; // Altura da linha
-            const x = canvas.width / scaleFactor / 2; // Centralização horizontal
-            const y = 50; // Ponto de partida para a renderização do texto
+
+            // Centralizar o texto horizontalmente
+            const x = canvas.width / scaleFactor / 2;
 
             // Definir o estilo de texto
             ctx.font = "30px Courier New";
@@ -257,7 +263,7 @@
             ctx.textAlign = "center";
 
             // Quebrar o texto e renderizá-lo no canvas
-            wrapText(ctx, text, x, y, maxWidth, lineHeight);
+            wrapText(ctx, text, x, 0, maxWidth, lineHeight);
         }
 
         // Função para baixar o card
