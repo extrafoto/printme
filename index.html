@@ -12,7 +12,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
             padding: 0;
         }
@@ -21,13 +21,16 @@
             text-align: center;
             width: 90%;
             max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .title {
             background-color: white;
-            padding: 20px 20px;
+            padding: 20px;
             border-radius: 20px;
-            margin-top: 20px;
+            margin-top: 40px;
             margin-bottom: 20px;
             font-size: 24px;
             font-weight: bold;
@@ -50,14 +53,16 @@
             background-color: white;
             border-radius: 20px;
             width: 100%;
-            max-width: 1080px;
             height: auto;
+            display: block;
+            margin: 20px auto;
         }
 
         .buttons {
             display: flex;
-            justify-content: space-around;
+            justify-content: center;
             margin-top: 20px;
+            gap: 20px;
             flex-wrap: wrap;
         }
 
@@ -76,15 +81,25 @@
             margin-right: 8px;
         }
 
-        .color-picker {
+        .format-picker, .color-picker {
             display: flex;
-            justify-content: space-around;
+            justify-content: center;
             margin-top: 10px;
+            gap: 20px;
         }
 
-        .color-picker div {
-            display: flex;
-            align-items: center;
+        .format-picker button, .color-picker div {
+            padding: 10px;
+            border: 2px solid #4BC8C7;
+            background-color: white;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 10px;
+        }
+
+        .format-picker button.active {
+            background-color: #4BC8C7;
+            color: white;
         }
 
         .color-picker input {
@@ -92,12 +107,13 @@
         }
 
         @media (max-width: 768px) {
-            .title {
-                font-size: 18px;
+            #cardCanvas {
+                width: 100%; /* Em telas menores, ocupar 100% da largura */
             }
 
-            #text-input {
-                font-size: 16px;
+            .format-picker, .buttons {
+                flex-direction: column;
+                gap: 10px;
             }
         }
     </style>
@@ -106,7 +122,13 @@
     <div class="container">
         <div class="title">Print me a card</div>
         <textarea id="text-input" placeholder="Digite sua frase aqui"></textarea>
-        <canvas id="cardCanvas" width="1080" height="1350"></canvas>
+        <canvas id="cardCanvas"></canvas>
+
+        <div class="format-picker">
+            <button id="btn1x1" onclick="setCanvasSize('1x1')">Feed 1x1</button>
+            <button id="btn4x5" onclick="setCanvasSize('4x5')">Feed 4x5</button>
+            <button id="btn9x16" onclick="setCanvasSize('9x16')">Histories 9x16</button>
+        </div>
 
         <div class="color-picker">
             <div>
@@ -136,7 +158,52 @@
     </div>
 
     <script>
-        // Função para gerar o card
+        let aspectRatio = 1; // Inicialmente 1x1
+
+        // Função para ajustar o tamanho do canvas para alta resolução
+        function setCanvasHighResolution(canvas, width, height, scaleFactor) {
+            canvas.width = width * scaleFactor;
+            canvas.height = height * scaleFactor;
+            canvas.style.width = `${width}px`;
+            canvas.style.height = `${height}px`;
+
+            const ctx = canvas.getContext("2d");
+            ctx.scale(scaleFactor, scaleFactor);
+        }
+
+        // Função para definir o tamanho do canvas conforme o formato selecionado
+        function setCanvasSize(format) {
+            const canvas = document.getElementById("cardCanvas");
+            const container = document.querySelector(".container");
+            const scaleFactor = 2; // Usar o fator de escala 2x para maior nitidez
+
+            resetButtonStyles(); // Reseta o estilo dos botões
+
+            if (format === '1x1') {
+                aspectRatio = 1 / 1;
+                document.getElementById('btn1x1').classList.add('active');
+            } else if (format === '4x5') {
+                aspectRatio = 4 / 5;
+                document.getElementById('btn4x5').classList.add('active');
+            } else if (format === '9x16') {
+                aspectRatio = 9 / 16;
+                document.getElementById('btn9x16').classList.add('active');
+            }
+
+            const width = container.clientWidth * 0.8; // Define a largura do canvas
+            const height = width / aspectRatio; // Define a altura com base na proporção
+
+            setCanvasHighResolution(canvas, width, height, scaleFactor);
+        }
+
+        // Função para resetar o estilo dos botões
+        function resetButtonStyles() {
+            document.getElementById('btn1x1').classList.remove('active');
+            document.getElementById('btn4x5').classList.remove('active');
+            document.getElementById('btn9x16').classList.remove('active');
+        }
+
+        // Função para gerar o card com ajuste de nitidez e quebra de linhas
         function generateCard() {
             const text = document.getElementById("text-input").value;
             const bgColor = document.getElementById("bg-color").value;
@@ -145,6 +212,9 @@
             const canvas = document.getElementById("cardCanvas");
             const ctx = canvas.getContext("2d");
 
+            const scaleFactor = 2;
+            setCanvasHighResolution(canvas, canvas.offsetWidth, canvas.offsetHeight, scaleFactor);
+
             // Limpar o canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -152,47 +222,51 @@
             ctx.fillStyle = bgColor;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Estilo de texto
-            let fontSize = 60; // Tamanho inicial da fonte
-            ctx.font = `bold ${fontSize}px Courier New`;
-            ctx.textAlign = "center";
-            ctx.fillStyle = textColor;
+            // Função para ajustar dinamicamente o texto e quebrar linhas dentro das margens
+            function wrapText(context, text, x, y, maxWidth, lineHeight) {
+                const words = text.split(' ');
+                let line = '';
+                const lines = [];
 
-            // Quebra o texto se necessário para caber no canvas
-            const maxWidth = canvas.width - 100; // Margem de 50px em cada lado
-            const lineHeight = fontSize * 1.2;
+                for (let n = 0; n < words.length; n++) {
+                    let testLine = line + words[n] + ' ';
+                    let metrics = context.measureText(testLine);
+                    let testWidth = metrics.width;
+                    if (testWidth > maxWidth && n > 0) {
+                        lines.push(line);
+                        line = words[n] + ' ';
+                    } else {
+                        line = testLine;
+                    }
+                }
+                lines.push(line);
 
-            const words = text.split(" ");
-            let lines = [];
-            let currentLine = words[0];
-
-            for (let i = 1; i < words.length; i++) {
-                const word = words[i];
-                const width = ctx.measureText(currentLine + " " + word).width;
-                if (width < maxWidth) {
-                    currentLine += " " + word;
-                } else {
-                    lines.push(currentLine);
-                    currentLine = word;
+                for (let i = 0; i < lines.length; i++) {
+                    context.fillText(lines[i], x, y + (i * lineHeight));
                 }
             }
-            lines.push(currentLine);
 
-            // Centralizar o texto no canvas
-            const yStart = (canvas.height - (lines.length * lineHeight)) / 2;
+            const maxWidth = (canvas.width / scaleFactor) - 40; // Definir uma margem de 20px em cada lado
+            const lineHeight = 30; // Altura da linha
+            const x = canvas.width / scaleFactor / 2; // Centralização horizontal
+            const y = 50; // Ponto de partida para a renderização do texto
 
-            lines.forEach((line, index) => {
-                ctx.fillText(line, canvas.width / 2, yStart + (index * lineHeight));
-            });
+            // Definir o estilo de texto
+            ctx.font = "30px Courier New";
+            ctx.fillStyle = textColor;
+            ctx.textAlign = "center";
+
+            // Quebrar o texto e renderizá-lo no canvas
+            wrapText(ctx, text, x, y, maxWidth, lineHeight);
         }
 
-        // Função para baixar o card como imagem PNG
+        // Função para baixar o card
         function downloadCard() {
             const canvas = document.getElementById("cardCanvas");
             const link = document.createElement('a');
-            link.href = canvas.toDataURL('image/png');
-            link.download = 'card.png';
-            link.click();
+            link.href = canvas.toDataURL('image/png'); // Converte o canvas em uma imagem
+            link.download = 'card.png'; // Nome do arquivo que será baixado
+            link.click(); // Simula o clique para baixar
         }
 
         // Função para limpar o canvas
